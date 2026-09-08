@@ -18,6 +18,7 @@ function fetchStudentById(id, callback) {
   }, 300);
 }
 
+// ก) id ที่มีจริง 
 fetchStudentById("6701", (error, student) => {
   if (error) {
     console.log("[มีจริง] error:", error.message);
@@ -44,3 +45,8 @@ fetchStudentById(42, (error, student) => {
   console.log("[ผิดรูปแบบ] student:", student);
 });
 
+// ① ถ้าลืมตรวจ error แล้วอ่าน .name ทันที จะเกิดอะไร ใครเห็น error นั้น
+// สั้น ๆ: ไม่เช็ก error เสี่ยงเจอ TypeError และโปรแกรม crash
+
+// ② ทำไมต้อง return หลังเรียก callback(error)
+// return หลัง callback(error) ป้องกันการเรียก callback ซ้ำ

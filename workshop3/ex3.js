@@ -5,48 +5,70 @@ const STUDENTS = [
   { id: "6704", name: "boom", major: "Engineering", score: 40 },
 ];
 
-
-function fetchStudentById(id) {
+function fetchStudentByIdAsync(id) {
   return new Promise((resolve, reject) => {
+    if (typeof id !== "string" || id === "") {
+      return reject(new Error("รหัสนักศึกษาไม่ถูกต้อง"));
+    }
+
     setTimeout(() => {
-      const student = STUDENTS.find(s => s.id === id);
-      if (student) {
-        resolve(student);
-      } else {
-        reject(new Error("ไม่พบข้อมูลนักศึกษา"));
-      }
-    }, 300); 
+      const student = STUDENTS.find((s) => s.id === id);
+      if (student) resolve({ ...student });
+      else reject(new Error(`ไม่พบรหัสนักศึกษา ${id}`));
+    }, 300);
   });
 }
 
 
 async function reportSequential(ids) {
-  const start = Date.now(); 
-
+  console.log("=== Sequential ===");
+  const start = Date.now();
   for (const id of ids) {
-    const student = await fetchStudentById(id); 
-    console.log(`พบข้อมูล: ${student.name} (เกรด ${student.score})`);
+    const student = await fetchStudentByIdAsync(id);
+    console.log("พบ:", student.name, "คะแนน:", student.score);
   }
+  const end = Date.now();
+  console.log("ใช้เวลา:", end - start, "ms");
+}
 
-  const elapsed = Date.now() - start; 
-  console.log(`ใช้เวลา ${elapsed} ms`);
-  return elapsed;
+async function reportParallel(ids) {
+  console.log("=== Parallel ===");
+  const start = Date.now();
+  const results = await Promise.all(ids.map((id) => fetchStudentByIdAsync(id)));
+  results.forEach((student) =>
+    console.log("พบ:", student.name, "คะแนน:", student.score)
+  );
+  const end = Date.now();
+  console.log("ใช้เวลา:", end - start, "ms");
+}
+
+async function safeReport(id) {
+  console.log("=== SafeReport ===");
+  try {
+    const student = await fetchStudentByIdAsync(id);
+    console.log(`พบข้อมูล: ${student.name} (เกรด ${student.score})`);
+  } catch (error) {
+    console.log(`ตรวจไม่พบ: ${error.message}`);
+  } finally {
+    console.log(`-- จบการตรวจสอบ ${id} --`);
+  }
 }
 
 async function main() {
   const ids = ["6701", "6702", "6703"];
-  await reportSequential(ids);
+
+  await reportSequential(ids);   
+  await reportParallel(ids);     
+
+  await safeReport("6701");     
+  await safeReport("9999");     
+  await safeReport(42);         
 }
 
 main();
 
-// ส่วน2
-async function reportParalle() {
-    const start = Date.now();
+// : ① ทำไม try-catch ครอบ await จับ reject ได้ แต่ครอบการเรียก callback ธรรมดาไม่ได้
+// เพราะ await ทำให้ error เดินตามทางปกติของ try-catch, แต่ callback แยกโลกของมันเอง
 
-    const students = await Promise.all(id => fetchStudentById(id));
-    for (const student of students) {
-        console.log(`พบข้อมูล: ${student.name} (เกรด ${student.score})`)
-    }
-
-}
+//  ② ทดลอง "ลืม await" หน้า Promise.all แล้วเอาผลไปใช้ต่อ — เกิดอะไรขึ้น เขียนคำอธิบายประกอบ
+//  ลืม await = ได้ Promise เปล่า ๆ ไม่ใช่ค่าที่ต้องการ
